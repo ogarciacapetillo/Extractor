@@ -1,0 +1,223 @@
+SOURCE_JOB="XXXXX"
+PARENT_JOB=${SOURCE_JOB}
+XML_PARSER_FILE="/kohls/prop/kcm/XMLParser.jar"
+CSV_LOCATION="/kohls/prop/kcm/es/testreport/tctd/json"
+CSV_FILE="${PARENT_JOB}_tcDetails.csv"
+LOGSTASH_LOCATION="/kohls/prop/kcm/installer/logstash-2.3.3/bin/test"
+LOGSTASH_FILE="junitResult.csv"
+DEST_USERID="xxxxxx"
+DEST_HOST="xx.xx.xx.xx"
+LOB="MERCH"
+CATEGORY="SMOKE"
+JOBNAME=${SOURCE_JOB}
+BUILDNo=${BuildNum}
+ENVIRONMENT_INSTANCE=${ENVIRONMENT_INSTANCE}
+# --------------------------------------------------
+# --------------------------------------------------
+
+Sno=1
+Log_list=/tmp/log.txt
+Log_list_intern=/tmp/log_internal.txt
+
+
+OUTPUTFILE=metricsData.csv
+OUTPUTFILE_UNIQ=metricsData_UNIQUE.csv
+
+
+
+rm -rf ${OUTPUTFILE} ${Log_list} ${Log_list_intern} ${OUTPUTFILE_UNIQ}
+
+# Read properties/configuration file automationJob.properties
+ 
+git clone "git@github.kohls.com:QCoE/TestAutomationValueKPI.git"
+
+#cat automationJobs.properties | sed 's/\./_/g' > .automationJobs.properties 
+
+#cat automationJobs.properties
+
+#. automationJobs.properties 
+
+#rm .automationJobs.properties 
+
+
+# Read the selector property value
+
+# Merch
+#SELECTOR=$merchSelector
+# CMFC
+#SELECTOR=$cmfcSelector
+
+#cp -r "TestAutomationValueKPI/${SELECTOR}" $WORKSPACE
+
+cp "TestAutomationValueKPI/${OUTPUTFILE}" $WORKSPACE
+
+
+#echo "IDENTIFIER,LOB,CATEGORY,JOBNAME,BUILDNo,BUILDSTAT,BUILDDATE,TOTAL,FAILURE,PASSED,ERROR,SKIPPED,EXECUTIONTIME" >> $WORKSPACE/${OUTPUTFILE}
+
+cd $WORKSPACE
+
+#echo $SELECTOR
+#ls -lrat $SELECTOR
+
+
+#MERCH,FUNCTIONAL,PD-Automation-Testing
+#for LINE in `cat ${SELECTOR}`
+#do
+
+rm -rf  ${Log_list} ${Log_list_intern}
+#JOBNAME=`echo $LINE | awk -F "," '{print $3}'`
+#echo $JOBNAME
+
+
+#LOB=`echo $LINE | awk -F "," '{print $1}'`
+
+#CATEGORY=`echo $LINE | awk -F "," '{print $2}'`
+
+
+
+if [ -z ${JOBNAME} ]
+then
+echo "JOBNAME is empty"
+#exit 1;
+else
+
+
+
+echo "----------------${JOBNAME}"
+pwd;
+
+
+WORKDIR="/kohls/prop/kcm/jenkins-home/jobs/${JOBNAME}/builds"
+
+cd $WORKDIR
+
+# This line get a specific X number of days back to current
+find . -name "log" -ctime -40 -exec ls  {} \; | sort -n -t "/" +1 -2 > $Log_list
+#echo "./${BUILDNo}/log" > $Log_list
+
+
+# This line gets all the existing logs
+
+# find . -name "log" -exec ls  {} \; | sort -n -t "/" +1 -2 > $Log_list
+#Need to modify the Log_list file to have only the log files
+
+cat  $Log_list | grep -v "last" | grep -v "com" > $Log_list_intern
+cat ${Log_list_intern} | sort -n -t "/" +1 -2 > $Log_list
+
+trim()
+{
+retval=$1
+retval=`echo "$1" | sed 's/[[:space:]]//g'`
+return $retval
+}
+
+
+for file in `cat $Log_list`
+do
+
+S_NBR=$Sno
+BUILD_NBR_arg=`echo $file | awk -F "\/" '{print $2}'`
+BUILDNo=$BUILD_NBR_arg
+UNIQUE="${JOBNAME}_${BUILD_NBR_arg}"
+
+#Clean up task. Remove spaces, Remove labels, convert time to seconds
+sleep 3
+
+BUILD_STATUS=`cat $file | grep -a "Finished:" |tail -1| awk -F ":" '{print $NF}'`
+BUILD_DATE=`stat -c %y ${file} | awk -F " " '{print $1}' | sed 's/-//g'`
+TESTRUN=`grep -a  "Tests run" ${file} | tail -1 | awk -F "," '{print $1}'`
+FAILURE=`grep -a  "Tests run" ${file} | tail -1 | awk -F "," '{print $2}'`
+ERROR=`grep -a  "Tests run" ${file} | tail -1 | awk -F "," '{print $3}'`
+SKIPPED=`grep -a  "Tests run" ${file} | tail -1 | awk -F "," '{print $4}'`
+TIME_ELAPSED=`grep -a  "Total time" ${file} | tail -1 | awk '/Total time/'`
+
+
+
+BUILD_STATUS=`echo "$BUILD_STATUS" | sed 's/[[:space:]]//g'`
+BUILD_DATE=`echo "$BUILD_DATE" | sed 's/[[:space:]]//g'`
+
+TESTRUN=`echo "$TESTRUN" | sed 's/[[:space:]]//g'`
+TESTRUN=`echo "$TESTRUN" | sed 's/\<Testsrun\>//g'`
+TESTRUN=`echo "$TESTRUN" | sed 's/://g'`
+
+FAILURE=`echo "$FAILURE" | sed 's/[[:space:]]//g'`
+FAILURE=`echo "$FAILURE" | sed 's/\<Failures\>//g'`
+FAILURE=`echo "$FAILURE" | sed 's/://g'`
+
+ERROR=`echo "$ERROR" | sed 's/[[:space:]]//g'`
+ERROR=`echo "$ERROR" | sed 's/\<Errors\>//g'`
+ERROR=`echo "$ERROR" | sed 's/://g'`
+
+SKIPPED=`echo "$SKIPPED" | sed 's/[[:space:]]//g'`
+SKIPPED=`echo "$SKIPPED" | sed 's/\<Skipped\>//g'`
+SKIPPED=`echo "$SKIPPED" | sed 's/://g'`
+
+TIME_ELAPSED=`echo "$TIME_ELAPSED" | sed 's/[[:space:]]//g'`
+TIME_ELAPSED=`echo "$TIME_ELAPSED" | sed 's/\<Totaltime\>//g'`
+TIME_ELAPSED=`echo "$TIME_ELAPSED" | sed 's/\[//g'`
+TIME_ELAPSED=`echo "$TIME_ELAPSED" | sed 's/\]//g'`
+TIME_ELAPSED=`echo "$TIME_ELAPSED" | sed 's/\<INFO\>//g'`
+TIME_ELAPSED=`echo "$TIME_ELAPSED" | sed 's/\<min\>//g'`
+TIME_ELAPSED=`echo "$TIME_ELAPSED" | sed 's/s//g'`
+TIME_ELAPSED=`echo "$TIME_ELAPSED" | sed 's/h//g'`
+TIME_ELAPSED=`echo "$TIME_ELAPSED" | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'`
+TIME_ELAPSED=`echo "$TIME_ELAPSED" | awk -F. '{ print $1}'`
+
+
+#ENVIRONMENT_INSTANCE="NA"
+ENVIRONMENT_INSTANCE=`egrep 'value|name' ${WORKDIR}/${BUILD_NBR_arg}/build.xml | cut -d ">" -f2 | cut -d "<" -f1 | awk '/BUILD_ENV/{print; nr[NR+1]; next}; NR in nr' | head -n 2 | tail -n 1`
+
+#`grep value ${WORKDIR}/${BUILD_NBR_arg}/build.xml | cut -d ">" -f2 | cut -d "<" -f1 | head -n 2 | tail -n 1` 
+
+if [ "${TESTRUN}" == "0" ]
+then
+PASSED="0"
+elif [ "${TESTRUN}" == "${FAILURE}" ]
+then
+PASSED="0"
+else
+PASSED=`expr ${TESTRUN} - ${FAILURE}`
+fi
+echo "PASSED=$PASSED"
+
+
+echo "${UNIQUE},${LOB},${CATEGORY},${JOBNAME},${BUILD_NBR_arg},${BUILD_STATUS},${BUILD_DATE},${TESTRUN},${FAILURE},${PASSED},${ERROR},${SKIPPED},${TIME_ELAPSED},${ENVIRONMENT_INSTANCE}" 
+echo "${UNIQUE},${LOB},${CATEGORY},${JOBNAME},${BUILD_NBR_arg},${BUILD_STATUS},${BUILD_DATE},${TESTRUN},${FAILURE},${PASSED},${ERROR},${SKIPPED},${TIME_ELAPSED},${ENVIRONMENT_INSTANCE}" >> $WORKSPACE/${OUTPUTFILE}
+
+DIRECTORY='com.kohls.saf$SeleniumTests'
+#Convert XML to csv
+if [ -f "/kohls/prop/kcm/jenkins-home/jobs/${PARENT_JOB}/modules/${DIRECTORY}/builds/${BUILDNo}/junitResult.xml" ]
+then
+
+linecount=`cat /kohls/prop/kcm/jenkins-home/jobs/${PARENT_JOB}/modules/${DIRECTORY}/builds/${BUILDNo}/junitResult.xml|wc -l`
+echo "Lines: ${linecount}"
+if [ ${linecount} -gt 7 ]
+then
+#echo "Parsing TC Details file..."
+java -jar  ${XML_PARSER_FILE} /kohls/prop/kcm/jenkins-home/jobs/${PARENT_JOB}/modules/${DIRECTORY}/builds/${BUILDNo}/junitResult.xml ${BUILDNo} ${ENVIRONMENT_INSTANCE}
+
+#Transfer CSV file to Logstash location
+scp -r ${CSV_LOCATION}/${CSV_FILE} ${DEST_USERID}@${DEST_HOST}:${LOGSTASH_LOCATION}/${LOGSTASH_FILE}
+fi
+
+fi
+
+Sno=`expr $Sno + 1`
+
+done
+fi
+
+cd $WORKSPACE
+cat ${OUTPUTFILE}
+
+cp ${OUTPUTFILE} ${WORKSPACE}/TestAutomationValueKPI
+cd ${WORKSPACE}/TestAutomationValueKPI
+cp ${OUTPUTFILE} ${OUTPUTFILE_UNIQ}
+rm -rf  ${OUTPUTFILE}
+uniq ${OUTPUTFILE_UNIQ} > ${OUTPUTFILE}
+
+
+echo "Copying  file"
+scp -r ${OUTPUTFILE} ${DEST_USERID}@${DEST_HOST}:${LOGSTASH_LOCATION}/.
+#ssh pzbldqc@10.3.40.135 "pwd; cd /kohls/prop/kcm/installer/logstash-2.3.3/bin/test/;pwd; cat /tmp/${OUTPUTFILE} > ${OUTPUTFILE}"
+
