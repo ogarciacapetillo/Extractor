@@ -1,12 +1,12 @@
-SOURCE_JOB="XXXXX"
+SOURCE_JOB="PD_Automation_Testing"
 PARENT_JOB=${SOURCE_JOB}
 XML_PARSER_FILE="/kohls/prop/kcm/XMLParser.jar"
 CSV_LOCATION="/kohls/prop/kcm/es/testreport/tctd/json"
 CSV_FILE="${PARENT_JOB}_tcDetails.csv"
 LOGSTASH_LOCATION="/kohls/prop/kcm/installer/logstash-2.3.3/bin/test"
 LOGSTASH_FILE="junitResult.csv"
-DEST_USERID="xxxxxx"
-DEST_HOST="xx.xx.xx.xx"
+DEST_USERID="pzbldqc"
+DEST_HOST="10.3.40.135"
 LOB="MERCH"
 CATEGORY="SMOKE"
 JOBNAME=${SOURCE_JOB}
@@ -165,7 +165,11 @@ TIME_ELAPSED=`echo "$TIME_ELAPSED" | awk -F. '{ print $1}'`
 
 
 #ENVIRONMENT_INSTANCE="NA"
+
 ENVIRONMENT_INSTANCE=`egrep 'value|name' ${WORKDIR}/${BUILD_NBR_arg}/build.xml | cut -d ">" -f2 | cut -d "<" -f1 | awk '/BUILD_ENV/{print; nr[NR+1]; next}; NR in nr' | head -n 2 | tail -n 1`
+if [ -z "$ENVIRONMENT_INSTANCE" ]; then
+ENVIRONMENT_INSTANCE="NA"
+fi
 
 #`grep value ${WORKDIR}/${BUILD_NBR_arg}/build.xml | cut -d ">" -f2 | cut -d "<" -f1 | head -n 2 | tail -n 1` 
 
